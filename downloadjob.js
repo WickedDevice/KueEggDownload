@@ -2,6 +2,7 @@ var kue = require('kue')
   , queue = kue.createQueue();
 var rp = require('request-promise');
 var config = require('../config.json');
+var fs = require('fs');
 
 var OPENSENSORS_API_BASE_URL = "https://api.opensensors.io"
 
@@ -69,7 +70,7 @@ queue.process('download', (job, done) => {
           let job2 = queue.create('download', {
               title: 'downloading url ' + nextUrl
             , url: nextUrl
-            , save_path: job.data.save_location
+            , save_path: job.data.save_path
             , user_id: job.data.user_id
             , email: job.data.email
             , sequence: job.data.sequence + 1
@@ -80,9 +81,21 @@ queue.process('download', (job, done) => {
           .save();                  
 	}
 	else{
-		// otherwise create a new stitching job modeled after this one
-        
+        // otherwise create a new stitching job modeled after this one               
+          let job2 = queue.create('stitch', {
+              title: 'stitching data after ' + job.data.url 
+            , save_path: job.data.save_path
+            , user_id: job.data.user_id
+            , email: job.data.email
+          })
+          .priority('high')
+          .attempts(1)
+          .save();     
         }
+        
+        // write the results to disk in the specified location
+        let filepath = `${job.data.save_path}/${job.data.sequence}.json`;
+        fs.writeFileSync(filepath, JSON.stringify(payload));
         done(null, payload);      
       }
     })
