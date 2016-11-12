@@ -119,7 +119,7 @@ queue.process('download', (job, done) => {
         }
 
         // if the requisite subdirector doesn't exist, then create it
-        let dir = `${job.data.save_path}/${job.data.serial}`;
+        let dir = `${job.data.save_path}/${job.data.serials[0]}`;
         if (!fs.existsSync(dir)){
           fs.mkdirSync(dir);
         }
