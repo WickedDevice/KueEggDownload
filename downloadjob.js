@@ -97,7 +97,7 @@ queue.process('download', (job, done) => {
               , save_path: job.data.save_path
               , user_id: job.data.user_id
               , email: job.data.email
-              , sequence: job.data.sequence + 1
+              , sequence: 1
             })
             .priority('high')
             .attempts(10)
