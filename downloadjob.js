@@ -8,7 +8,7 @@ var OPENSENSORS_API_BASE_URL = "https://api.opensensors.io"
 
 queue.process('download', (job, done) => {
   // the download job is going to need the following parameters
-  //    serial    - the egg serial number
+  //    serials   - the array of egg serial numbers
   //    url       - the url to download
   //    save_path - the full path to where the result should be saved
   //    user_id   - the user id that made the request
@@ -17,7 +17,7 @@ queue.process('download', (job, done) => {
 
 
   var options = {
-    uri: job.data.url,
+    uri: job.data.url.replace('${serial-number}', job.data.serials[0]),
     headers: {
        'Accept': 'application/json',
        'Authorization': 'api-key ' + config['api-key']
@@ -65,13 +65,14 @@ queue.process('download', (job, done) => {
           }
         });
 
-        // if there is a next field then create a new download job modeled after this one
         if(response.body.next){
+          // if there is a next field then create a new download job modeled after this one
           let nextUrl = OPENSENSORS_API_BASE_URL + response.body.next;
           let job2 = queue.create('download', {
               title: 'downloading url ' + nextUrl
-            , serial: job.data.serial
-            , url: nextUrl
+            , serials: job.data.serials.slice()
+            , url: nextUrl.replace(job.data.serials[0], '${serial-number}')
+            , original_url: job.data.original_url
             , save_path: job.data.save_path
             , user_id: job.data.user_id
             , email: job.data.email
@@ -82,17 +83,39 @@ queue.process('download', (job, done) => {
           .backoff({delay: 60*1000, type:'exponential'})
           .save();                  
 	}
-	else{
-        // otherwise create a new stitching job modeled after this one               
-          let job2 = queue.create('stitch', {
-              title: 'stitching data after ' + job.data.url 
-            , save_path: job.data.save_path
-            , user_id: job.data.user_id
-            , email: job.data.email
-          })
-          .priority('high')
-          .attempts(1)
-          .save();     
+	else {
+          // pop the zero element out of the serials array
+          // if there are any left, spawn a new job with the 
+          // reduced array of serial numbers
+          let serials = job.data.serials.slice(1);
+          if(serials.length > 0){
+            let job2 = queue.create('download', {
+                title: 'downloading url ' + job.data.original_url.replace('${serial-number}',serials[0])
+              , serials: serials
+              , url: job.data.original_url
+              , original_url: job.data.original_url
+              , save_path: job.data.save_path
+              , user_id: job.data.user_id
+              , email: job.data.email
+              , sequence: job.data.sequence + 1
+            })
+            .priority('high')
+            .attempts(10)
+            .backoff({delay: 60*1000, type:'exponential'})
+            .save();
+          }
+          else {
+          // otherwise create a new stitching job modeled after this one               
+            let job2 = queue.create('stitch', {
+                title: 'stitching data after ' + job.data.url 
+              , save_path: job.data.save_path
+              , user_id: job.data.user_id
+              , email: job.data.email
+            })
+            .priority('high')
+            .attempts(1)
+            .save();     
+          }
         }
 
         // if the requisite subdirector doesn't exist, then create it
