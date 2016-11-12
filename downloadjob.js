@@ -8,6 +8,7 @@ var OPENSENSORS_API_BASE_URL = "https://api.opensensors.io"
 
 queue.process('download', (job, done) => {
   // the download job is going to need the following parameters
+  //    serial    - the egg serial number
   //    url       - the url to download
   //    save_path - the full path to where the result should be saved
   //    user_id   - the user id that made the request
@@ -29,7 +30,7 @@ queue.process('download', (job, done) => {
   rp(options)
     .then((response) => {
       if(response.statusCode !== 200){
-        done(new Error("OpenSensors returned status code " + response.statusCode));
+        done(new Error(`OpenSensors returned status code ${response.statusCode}, with body ${JSON.stringify(response.body)}`));
       }
       else if(!response.body.messages){
         done(new Error("OpenSensors returned a body with no messages"));     
@@ -69,6 +70,7 @@ queue.process('download', (job, done) => {
           let nextUrl = OPENSENSORS_API_BASE_URL + response.body.next;
           let job2 = queue.create('download', {
               title: 'downloading url ' + nextUrl
+            , serial: job.data.serial
             , url: nextUrl
             , save_path: job.data.save_path
             , user_id: job.data.user_id
@@ -76,8 +78,8 @@ queue.process('download', (job, done) => {
             , sequence: job.data.sequence + 1
           })
           .priority('high')
-          .attempts(3)
-          .backoff({delay: 60*1000, type:'fixed'})
+          .attempts(10)
+          .backoff({delay: 60*1000, type:'exponential'})
           .save();                  
 	}
 	else{
@@ -92,9 +94,15 @@ queue.process('download', (job, done) => {
           .attempts(1)
           .save();     
         }
+
+        // if the requisite subdirector doesn't exist, then create it
+        let dir = `${job.data.save_path}/${job.data.serial}`;
+        if (!fs.existsSync(dir)){
+          fs.mkdirSync(dir);
+        }
         
         // write the results to disk in the specified location
-        let filepath = `${job.data.save_path}/${job.data.sequence}.json`;
+        let filepath = `${dir}/${job.data.sequence}.json`;
         fs.writeFileSync(filepath, JSON.stringify(payload));
         done(null, payload);      
       }
