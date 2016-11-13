@@ -20,8 +20,8 @@ queue.process('download', (job, done) => {
   //    zipfilename - the filename desired for the final zip
 
 
-  if (!fs.existsSync(job.data.save_dir)){
-    fs.mkdirSync(job.data.save_dir);
+  if (!fs.existsSync(job.data.save_path)){
+    fs.mkdirSync(job.data.save_path);
   }
 
   var options = {
