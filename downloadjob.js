@@ -14,8 +14,9 @@ queue.process('download', (job, done) => {
   //    user_id   - the user id that made the request
   //    email     - the email address that should be notified on zip completed
   //    sequence  - the sequence number within this request chain
-
-
+  //    compensated - whether to extract compensated values (true) or uncompensated values (false)
+  //    instantaneous - whether to extract instantaneous values (true) or averaged values (false)
+  //    utcOffset - the utcOffset for downstream moment conversion in the csv file
   var options = {
     uri: job.data.url.replace('${serial-number}', job.data.serials[0]),
     headers: {
@@ -77,6 +78,9 @@ queue.process('download', (job, done) => {
             , user_id: job.data.user_id
             , email: job.data.email
             , sequence: job.data.sequence + 1
+            , compensated: job.data.compensated
+            , instantaneous: job.data.instantaneous
+            , utcOffset: job.data.utcOffset
           })
           .priority('high')
           .attempts(10)
@@ -98,6 +102,9 @@ queue.process('download', (job, done) => {
               , user_id: job.data.user_id
               , email: job.data.email
               , sequence: 1
+              , compensated: job.data.compensated
+              , instantaneous: job.data.instantaneous
+              , utcOffset: job.data.utcOffset
             })
             .priority('high')
             .attempts(10)
@@ -111,6 +118,9 @@ queue.process('download', (job, done) => {
               , save_path: job.data.save_path
               , user_id: job.data.user_id
               , email: job.data.email
+              , compensated: job.data.compensated
+              , instantaneous: job.data.instantaneous
+              , utcOffset: job.data.utcOffset
             })
             .priority('high')
             .attempts(1)
