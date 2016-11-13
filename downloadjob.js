@@ -8,7 +8,8 @@ var OPENSENSORS_API_BASE_URL = "https://api.opensensors.io"
 
 queue.process('download', (job, done) => {
   // the download job is going to need the following parameters
-  //    serials   - the array of egg serial numbers
+  //    original_serials - the original array of egg serial numbers
+  //    serials   - the array of egg serial numbers remaining to process
   //    url       - the url to download
   //    save_path - the full path to where the result should be saved
   //    user_id   - the user id that made the request
@@ -78,6 +79,7 @@ queue.process('download', (job, done) => {
           let nextUrl = OPENSENSORS_API_BASE_URL + response.body.next;
           let job2 = queue.create('download', {
               title: 'downloading url ' + nextUrl
+            , original_serials: job.data.original_serials.slice()
             , serials: job.data.serials.slice()
             , url: nextUrl.replace(job.data.serials[0], '${serial-number}')
             , original_url: job.data.original_url
@@ -103,6 +105,7 @@ queue.process('download', (job, done) => {
           if(serials.length > 0){
             let job2 = queue.create('download', {
                 title: 'downloading url ' + job.data.original_url.replace('${serial-number}',serials[0])
+              , original_serials: job.data.original_serials.slice()
               , serials: serials
               , url: job.data.original_url
               , original_url: job.data.original_url
@@ -125,6 +128,7 @@ queue.process('download', (job, done) => {
             let job2 = queue.create('stitch', {
                 title: 'stitching data after ' + job.data.url.replace('${serial-number}', job.data.serials[0]) 
               , save_path: job.data.save_path
+              , original_serials: job.data.original_serials.slice()
               , serials: serials
               , user_id: job.data.user_id
               , email: job.data.email
