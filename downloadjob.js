@@ -125,6 +125,7 @@ queue.process('download', (job, done) => {
             let job2 = queue.create('stitch', {
                 title: 'stitching data after ' + job.data.url.replace('${serial-number}', job.data.serials[0]) 
               , save_path: job.data.save_path
+              , serials: serials
               , user_id: job.data.user_id
               , email: job.data.email
               , compensated: job.data.compensated
