@@ -19,6 +19,11 @@ queue.process('download', (job, done) => {
   //    utcOffset - the utcOffset for downstream moment conversion in the csv file
   //    zipfilename - the filename desired for the final zip
 
+
+  if (!fs.existsSync(job.data.save_dir)){
+    fs.mkdirSync(job.data.save_dir);
+  }
+
   var options = {
     uri: job.data.url.replace('${serial-number}', job.data.serials[0]),
     headers: {
