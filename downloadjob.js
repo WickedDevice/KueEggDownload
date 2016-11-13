@@ -17,6 +17,8 @@ queue.process('download', (job, done) => {
   //    compensated - whether to extract compensated values (true) or uncompensated values (false)
   //    instantaneous - whether to extract instantaneous values (true) or averaged values (false)
   //    utcOffset - the utcOffset for downstream moment conversion in the csv file
+  //    zipfilename - the filename desired for the final zip
+
   var options = {
     uri: job.data.url.replace('${serial-number}', job.data.serials[0]),
     headers: {
@@ -81,6 +83,7 @@ queue.process('download', (job, done) => {
             , compensated: job.data.compensated
             , instantaneous: job.data.instantaneous
             , utcOffset: job.data.utcOffset
+            , zipfilename: job.data.zipfilename
           })
           .priority('high')
           .attempts(10)
@@ -105,6 +108,7 @@ queue.process('download', (job, done) => {
               , compensated: job.data.compensated
               , instantaneous: job.data.instantaneous
               , utcOffset: job.data.utcOffset
+              , zipfilename: job.data.zipfilename
             })
             .priority('high')
             .attempts(10)
@@ -121,6 +125,7 @@ queue.process('download', (job, done) => {
               , compensated: job.data.compensated
               , instantaneous: job.data.instantaneous
               , utcOffset: job.data.utcOffset
+              , zipfilename: job.data.zipfilename
             })
             .priority('high')
             .attempts(1)
