@@ -26,7 +26,7 @@ queue.process('download', (job, done) => {
   }
 
   var options = {
-    uri: job.data.url.replace('${serial-number}', job.data.serials[0]),
+    uri: job.data.url.replace('${serial-number}', job.data.serials[0].split("=")[0]),
     headers: {
        'Accept': 'application/json',
        'Authorization': 'api-key ' + config['api-key']
@@ -81,7 +81,7 @@ queue.process('download', (job, done) => {
               title: 'downloading url ' + nextUrl
             , original_serials: job.data.original_serials.slice()
             , serials: job.data.serials.slice()
-            , url: nextUrl.replace(job.data.serials[0], '${serial-number}')
+            , url: nextUrl.replace(job.data.serials[0].split("=")[0], '${serial-number}')
             , original_url: job.data.original_url
             , save_path: job.data.save_path
             , user_id: job.data.user_id
@@ -104,7 +104,7 @@ queue.process('download', (job, done) => {
           let serials = job.data.serials.slice(1);
           if(serials.length > 0){
             let job2 = queue.create('download', {
-                title: 'downloading url ' + job.data.original_url.replace('${serial-number}',serials[0])
+                title: 'downloading url ' + job.data.original_url.replace('${serial-number}',serials[0].split("=")[0])
               , original_serials: job.data.original_serials.slice()
               , serials: serials
               , url: job.data.original_url
@@ -126,7 +126,7 @@ queue.process('download', (job, done) => {
           else {
           // otherwise create a new stitching job modeled after this one               
             let job2 = queue.create('stitch', {
-                title: 'stitching data after ' + job.data.url.replace('${serial-number}', job.data.serials[0]) 
+                title: 'stitching data after ' + job.data.url.replace('${serial-number}', job.data.serials[0].split("=")[0]) 
               , save_path: job.data.save_path
               , original_serials: job.data.original_serials.slice()
               , serials: serials
@@ -144,7 +144,20 @@ queue.process('download', (job, done) => {
         }
 
         // if the requisite subdirector doesn't exist, then create it
+        let prefix = "";
+        let split = job.data.serials[0].split("=");
         let dir = `${job.data.save_path}/${job.data.serials[0]}`;
+        if(split.length > 1){
+          let cleanup_prefix = split.slice(1).join("_");
+          cleanup_prefix += "_" + split[0];
+          cleanup_prefix = cleanup_prefix.replace(/[^\x20-\x7E]+/g, ''); // no non-printable characters allowed
+          ['\\\\','/',':','\\*','\\?','"','<','>','\\|',"-"," "].forEach(function(c){
+            var regex = new RegExp(c, "g");
+            cleanup_prefix = cleanup_prefix.replace(regex, "_"); // turn illegal characters into '_'
+          });
+          dir = `${job.data.save_path}/${cleanup_prefix}`;
+        }
+
         if (!fs.existsSync(dir)){
           fs.mkdirSync(dir);
         }
