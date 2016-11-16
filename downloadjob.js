@@ -38,7 +38,12 @@ queue.process('download', (job, done) => {
   
   rp(options)
     .then((response) => {
-      if(response.statusCode !== 200){
+      if(response.statusCode === 404){
+        createDirFromJobIfNotExists();
+        spawnNextSerialNumberJob();
+        done();
+      }
+      else if(response.statusCode !== 200){
         done(new Error(`OpenSensors returned status code ${response.statusCode}, with body ${JSON.stringify(response.body)}`));
       }
       else if(!response.body.messages){
@@ -96,82 +101,92 @@ queue.process('download', (job, done) => {
           .attempts(10)
           .backoff({delay: 60*1000, type:'exponential'})
           .save();                  
-	}
-	else {
+        }
+        else {
           // pop the zero element out of the serials array
           // if there are any left, spawn a new job with the 
           // reduced array of serial numbers
-          let serials = job.data.serials.slice(1);
-          if(serials.length > 0){
-            let job2 = queue.create('download', {
-                title: 'downloading url ' + job.data.original_url.replace('${serial-number}',serials[0].split("=")[0])
-              , original_serials: job.data.original_serials.slice()
-              , serials: serials
-              , url: job.data.original_url
-              , original_url: job.data.original_url
-              , save_path: job.data.save_path
-              , user_id: job.data.user_id
-              , email: job.data.email
-              , sequence: 1
-              , compensated: job.data.compensated
-              , instantaneous: job.data.instantaneous
-              , utcOffset: job.data.utcOffset
-              , zipfilename: job.data.zipfilename
-            })
-            .priority('high')
-            .attempts(10)
-            .backoff({delay: 60*1000, type:'exponential'})
-            .save();
-          }
-          else {
-          // otherwise create a new stitching job modeled after this one               
-            let job2 = queue.create('stitch', {
-                title: 'stitching data after ' + job.data.url.replace('${serial-number}', job.data.serials[0].split("=")[0]) 
-              , save_path: job.data.save_path
-              , original_serials: job.data.original_serials.slice()
-              , serials: serials
-              , user_id: job.data.user_id
-              , email: job.data.email
-              , compensated: job.data.compensated
-              , instantaneous: job.data.instantaneous
-              , utcOffset: job.data.utcOffset
-              , zipfilename: job.data.zipfilename
-            })
-            .priority('high')
-            .attempts(1)
-            .save();     
-          }
+          spawnNextSerialNumberJob();
         }
 
-        // if the requisite subdirector doesn't exist, then create it
-        let prefix = "";
-        let split = job.data.serials[0].split("=");
-        let dir = `${job.data.save_path}/${job.data.serials[0]}`;
-        if(split.length > 1){
-          let cleanup_prefix = split.slice(1).join("_");
-          cleanup_prefix += "_" + split[0];
-          cleanup_prefix = cleanup_prefix.replace(/[^\x20-\x7E]+/g, ''); // no non-printable characters allowed
-          ['\\\\','/',':','\\*','\\?','"','<','>','\\|',"-"," "].forEach(function(c){
-            var regex = new RegExp(c, "g");
-            cleanup_prefix = cleanup_prefix.replace(regex, "_"); // turn illegal characters into '_'
-          });
-          dir = `${job.data.save_path}/${cleanup_prefix}`;
-        }
-
-        if (!fs.existsSync(dir)){
-          fs.mkdirSync(dir);
-        }
+        // if the requisite subdirector doesn't exist, then create it        
+        let dir = createDirFromJobIfNotExists();
         
         // write the results to disk in the specified location
         let filepath = `${dir}/${job.data.sequence}.json`;
         fs.writeFileSync(filepath, JSON.stringify(payload));
-        done(null, payload);      
+        // done(null, payload);      
+        done();
       }
     })
     .catch((err) => {
         console.log(err.stack);
         done(err);
     });   
+    
+    let createDirFromJobIfNotExists = () => {
+      let split = job.data.serials[0].split("=");
+      let dir = `${job.data.save_path}/${job.data.serials[0]}`;
+      if(split.length > 1){
+        let cleanup_prefix = split.slice(1).join("_");
+        cleanup_prefix += "_" + split[0];
+        cleanup_prefix = cleanup_prefix.replace(/[^\x20-\x7E]+/g, ''); // no non-printable characters allowed
+        ['\\\\','/',':','\\*','\\?','"','<','>','\\|',"-"," "].forEach(function(c){
+          var regex = new RegExp(c, "g");
+          cleanup_prefix = cleanup_prefix.replace(regex, "_"); // turn illegal characters into '_'
+        });
+        dir = `${job.data.save_path}/${cleanup_prefix}`;
+      }
+
+      if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+      }        
+      
+      return dir;
+    }
+    
+    let spawnNextSerialNumberJob = () => {
+      let serials = job.data.serials.slice(1);
+      if(serials.length > 0){
+        let job2 = queue.create('download', {
+            title: 'downloading url ' + job.data.original_url.replace('${serial-number}',serials[0].split("=")[0])
+          , original_serials: job.data.original_serials.slice()
+          , serials: serials
+          , url: job.data.original_url
+          , original_url: job.data.original_url
+          , save_path: job.data.save_path
+          , user_id: job.data.user_id
+          , email: job.data.email
+          , sequence: 1
+          , compensated: job.data.compensated
+          , instantaneous: job.data.instantaneous
+          , utcOffset: job.data.utcOffset
+          , zipfilename: job.data.zipfilename
+        })
+        .priority('high')
+        .attempts(10)
+        .backoff({delay: 60*1000, type:'exponential'})
+        .save();
+      }
+      else {
+      // otherwise create a new stitching job modeled after this one               
+        let job2 = queue.create('stitch', {
+            title: 'stitching data after ' + job.data.url.replace('${serial-number}', job.data.serials[0].split("=")[0]) 
+          , save_path: job.data.save_path
+          , original_serials: job.data.original_serials.slice()
+          , serials: serials
+          , user_id: job.data.user_id
+          , email: job.data.email
+          , compensated: job.data.compensated
+          , instantaneous: job.data.instantaneous
+          , utcOffset: job.data.utcOffset
+          , zipfilename: job.data.zipfilename
+        })
+        .priority('high')
+        .attempts(1)
+        .save();     
+      }    
+    };
 });
 
 
