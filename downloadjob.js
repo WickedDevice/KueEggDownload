@@ -178,7 +178,7 @@ queue.process('download', (job, done) => {
         }                
         
         let job2 = queue.create('stitch', {
-            title: 'stitching data for ' + job.data.original_serials[0]) 
+            title: 'stitching data for ' + job.data.original_serials[0] 
           , save_path: job.data.save_path
           , original_serials: job.data.original_serials.slice()
           , serials: getDirectories(job.data.save_path)
