@@ -171,7 +171,7 @@ queue.process('download', (job, done) => {
       else {
       // otherwise create a new stitching job modeled after this one               
         let job2 = queue.create('stitch', {
-            title: 'stitching data for ' + job.data.original_serials[0]) 
+            title: 'stitching data for ' + job.data.original_serials[0] 
           , save_path: job.data.save_path
           , original_serials: job.data.original_serials.slice()
           , serials: job.data.original_serials.slice()
