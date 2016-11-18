@@ -169,12 +169,19 @@ queue.process('download', (job, done) => {
         .save();
       }
       else {
-      // otherwise create a new stitching job modeled after this one               
+        // otherwise create a new stitching job modeled after this one      
+        // populate serials with the list of directories in the working folder-  getDirectories(job.data.save_path).forEach( (dir) => {		 +  let dir = ${job.data.serials[0]};  
+        let getDirectories = (srcpath) => {
+          return fs.readdirSync(srcpath).filter( (file) => {
+            return fs.statSync(path.join(srcpath, file)).isDirectory();
+          });
+        }                
+        
         let job2 = queue.create('stitch', {
             title: 'stitching data for ' + job.data.original_serials[0]) 
           , save_path: job.data.save_path
           , original_serials: job.data.original_serials.slice()
-          , serials: job.data.original_serials.slice()
+          , serials: getDirectories(job.data.save_path)
           , user_id: job.data.user_id
           , email: job.data.email
           , compensated: job.data.compensated
