@@ -171,10 +171,10 @@ queue.process('download', (job, done) => {
       else {
       // otherwise create a new stitching job modeled after this one               
         let job2 = queue.create('stitch', {
-            title: 'stitching data after ' + job.data.url.replace('${serial-number}', job.data.serials[0].split("=")[0]) 
+            title: 'stitching data for ' + job.data.original_serials[0]) 
           , save_path: job.data.save_path
           , original_serials: job.data.original_serials.slice()
-          , serials: serials
+          , serials: job.data.original_serials.slice()
           , user_id: job.data.user_id
           , email: job.data.email
           , compensated: job.data.compensated
