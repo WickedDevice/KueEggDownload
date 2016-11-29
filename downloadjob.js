@@ -184,7 +184,7 @@ queue.process('download', (job, done) => {
             title: 'stitching data for ' + job.data.original_serials[0] 
           , save_path: job.data.save_path
           , original_serials: job.data.original_serials.slice()
-          , serials: directories,
+          , serials: directories
           , user_id: job.data.user_id
           , email: job.data.email
           , compensated: job.data.compensated
