@@ -175,13 +175,15 @@ queue.process('download', (job, done) => {
           return fs.readdirSync(srcpath).filter( (file) => {
             return fs.statSync(path.join(srcpath, file)).isDirectory();
           });
-        }                
+        }  
+        
+        let directories = getDirectories(job.data.save_path);          
         
         let job2 = queue.create('stitch', {
             title: 'stitching data for ' + job.data.original_serials[0] 
           , save_path: job.data.save_path
           , original_serials: job.data.original_serials.slice()
-          , serials: getDirectories(job.data.save_path)
+          , serials: directories,
           , user_id: job.data.user_id
           , email: job.data.email
           , compensated: job.data.compensated
