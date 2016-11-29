@@ -3,6 +3,7 @@ var kue = require('kue')
 var rp = require('request-promise');
 var config = require('../config.json');
 var fs = require('fs');
+var path = require('path');
 
 var OPENSENSORS_API_BASE_URL = "https://api.opensensors.io"
 
@@ -51,7 +52,7 @@ queue.process('download', (job, done) => {
       }
       else{      
         if(response.body.messages.length == 0){
-          console.log("Warning: response.body.messages.length was zero in response to " + job.data.url);        
+          console.log("Warning: response.body.messages.length was zero in response to " + options.uri);        
         }
         
         let payload = response.body.messages.map((msg) => {
