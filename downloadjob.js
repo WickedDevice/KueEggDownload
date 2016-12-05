@@ -50,7 +50,10 @@ queue.process('download', (job, done) => {
       else if(!response.body.messages){
         done(new Error("OpenSensors returned a body with no messages"));     
       }
-      else{      
+      else{  
+        // if the requisite subdirector doesn't exist, then create it        
+        let dir = createDirFromJobIfNotExists();      
+          
         if(response.body.messages.length == 0){
           console.log("Warning: response.body.messages.length was zero in response to " + options.uri);        
         }
@@ -109,9 +112,6 @@ queue.process('download', (job, done) => {
           // reduced array of serial numbers
           spawnNextSerialNumberJob();
         }
-
-        // if the requisite subdirector doesn't exist, then create it        
-        let dir = createDirFromJobIfNotExists();
         
         // write the results to disk in the specified location
         let filepath = `${dir}/${job.data.sequence}.json`;
