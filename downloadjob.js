@@ -20,6 +20,7 @@ queue.process('download', (job, done) => {
   //    instantaneous - whether to extract instantaneous values (true) or averaged values (false)
   //    utcOffset - the utcOffset for downstream moment conversion in the csv file
   //    zipfilename - the filename desired for the final zip
+  //    bypassjobs - array of jobs that should not be run in this pipe
 
 
   if (!fs.existsSync(job.data.save_path)){
@@ -34,9 +35,9 @@ queue.process('download', (job, done) => {
     },
     json: true,
     resolveWithFullResponse: true,
-    simple: false 
-  };  
-  
+    simple: false
+  };
+
   rp(options)
     .then((response) => {
       if(response.statusCode === 404){
@@ -48,16 +49,16 @@ queue.process('download', (job, done) => {
         done(new Error(`OpenSensors returned status code ${response.statusCode}, with body ${JSON.stringify(response.body)}`));
       }
       else if(!response.body.messages){
-        done(new Error("OpenSensors returned a body with no messages"));     
+        done(new Error("OpenSensors returned a body with no messages"));
       }
-      else{  
-        // if the requisite subdirector doesn't exist, then create it        
-        let dir = createDirFromJobIfNotExists();      
-          
+      else{
+        // if the requisite subdirector doesn't exist, then create it
+        let dir = createDirFromJobIfNotExists();
+
         if(response.body.messages.length == 0){
-          console.log("Warning: response.body.messages.length was zero in response to " + options.uri);        
+          console.log("Warning: response.body.messages.length was zero in response to " + options.uri);
         }
-        
+
         let payload = response.body.messages.map((msg) => {
           // as it turns out nan is not valid JSON
           let body;
@@ -104,27 +105,27 @@ queue.process('download', (job, done) => {
           .priority('high')
           .attempts(10)
           .backoff({delay: 60*1000, type:'exponential'})
-          .save();                  
+          .save();
         }
         else {
           // pop the zero element out of the serials array
-          // if there are any left, spawn a new job with the 
+          // if there are any left, spawn a new job with the
           // reduced array of serial numbers
           spawnNextSerialNumberJob();
         }
-        
+
         // write the results to disk in the specified location
         let filepath = `${dir}/${job.data.sequence}.json`;
         fs.writeFileSync(filepath, JSON.stringify(payload));
-        // done(null, payload);      
+        // done(null, payload);
         done();
       }
     })
     .catch((err) => {
         console.log(err.stack);
         done(err);
-    });   
-    
+    });
+
     let createDirFromJobIfNotExists = () => {
       let split = job.data.serials[0].split("=");
       let dir = `${job.data.save_path}/${job.data.serials[0]}`;
@@ -141,11 +142,11 @@ queue.process('download', (job, done) => {
 
       if (!fs.existsSync(dir)){
         fs.mkdirSync(dir);
-      }        
-      
+      }
+
       return dir;
     }
-    
+
     let spawnNextSerialNumberJob = () => {
       let serials = job.data.serials.slice(1);
       if(serials.length > 0){
@@ -163,6 +164,7 @@ queue.process('download', (job, done) => {
           , instantaneous: job.data.instantaneous
           , utcOffset: job.data.utcOffset
           , zipfilename: job.data.zipfilename
+          , bypassjobs: job.data.bypassjobs ? job.data.bypassjobs.slice() : []
         })
         .priority('high')
         .attempts(10)
@@ -170,18 +172,18 @@ queue.process('download', (job, done) => {
         .save();
       }
       else {
-        // otherwise create a new stitching job modeled after this one      
-        // populate serials with the list of directories in the working folder-  getDirectories(job.data.save_path).forEach( (dir) => {		 +  let dir = ${job.data.serials[0]};  
+        // otherwise create a new stitching job modeled after this one
+        // populate serials with the list of directories in the working folder-  getDirectories(job.data.save_path).forEach( (dir) => {		 +  let dir = ${job.data.serials[0]};
         let getDirectories = (srcpath) => {
           return fs.readdirSync(srcpath).filter( (file) => {
             return fs.statSync(path.join(srcpath, file)).isDirectory();
           });
-        }  
-        
-        let directories = getDirectories(job.data.save_path);          
-        
+        }
+
+        let directories = getDirectories(job.data.save_path);
+
         let job2 = queue.create('stitch', {
-            title: 'stitching data for ' + job.data.original_serials[0] 
+            title: 'stitching data for ' + job.data.original_serials[0]
           , save_path: job.data.save_path
           , original_serials: job.data.original_serials.slice()
           , original_url: job.data.original_url
@@ -192,11 +194,12 @@ queue.process('download', (job, done) => {
           , instantaneous: job.data.instantaneous
           , utcOffset: job.data.utcOffset
           , zipfilename: job.data.zipfilename
+          , bypassjobs: job.data.bypassjobs ? job.data.bypassjobs.slice() : []
         })
         .priority('high')
         .attempts(1)
-        .save();     
-      }    
+        .save();
+      }
     };
 });
 
