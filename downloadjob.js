@@ -25,7 +25,7 @@ queue.process('download', (job, done) => {
 
   if (!fs.existsSync(job.data.save_path)){
     fs.mkdirSync(job.data.save_path);
-    fs.writeFileSync(`${job.data.save_path}/status.json`, JSON.stringify({complete: false});
+    fs.writeFileSync(`${job.data.save_path}/status.json`, JSON.stringify({complete: false}));
   }
 
   var options = {
