@@ -102,6 +102,7 @@ queue.process('download', (job, done) => {
             , instantaneous: job.data.instantaneous
             , utcOffset: job.data.utcOffset
             , zipfilename: job.data.zipfilename
+            , bypassjobs: job.data.bypassjobs ? job.data.bypassjobs.slice() : []
           })
           .priority('high')
           .attempts(10)
