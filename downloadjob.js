@@ -103,6 +103,7 @@ queue.process('download', (job, done) => {
             , utcOffset: job.data.utcOffset
             , zipfilename: job.data.zipfilename
             , bypassjobs: job.data.bypassjobs ? job.data.bypassjobs.slice() : []
+            , stitch_format: job.data.stitch_format
           })
           .priority('high')
           .attempts(10)
@@ -167,6 +168,7 @@ queue.process('download', (job, done) => {
           , utcOffset: job.data.utcOffset
           , zipfilename: job.data.zipfilename
           , bypassjobs: job.data.bypassjobs ? job.data.bypassjobs.slice() : []
+          , stitch_format: job.data.stitch_format
         })
         .priority('high')
         .attempts(10)
@@ -197,6 +199,7 @@ queue.process('download', (job, done) => {
           , utcOffset: job.data.utcOffset
           , zipfilename: job.data.zipfilename
           , bypassjobs: job.data.bypassjobs ? job.data.bypassjobs.slice() : []
+          , stitch_format: job.data.stitch_format
         })
         .priority('high')
         .attempts(1)
