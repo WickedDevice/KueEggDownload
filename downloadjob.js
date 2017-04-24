@@ -88,6 +88,7 @@ queue.process('download', (job, done) => {
         if(response.body.next){
           // if there is a next field then create a new download job modeled after this one
           let nextUrl = OPENSENSORS_API_BASE_URL + response.body.next;
+          console.log(`Next URL after ${options.uri} is ${nextUrl}`)
           let job2 = queue.create('download', {
               title: 'downloading url ' + nextUrl
             , original_serials: job.data.original_serials.slice()
