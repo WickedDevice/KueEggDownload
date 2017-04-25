@@ -91,7 +91,7 @@ queue.process('download', (job, done) => {
           let nextUrl = OPENSENSORS_API_BASE_URL + response.body.next;
           // console.log(`Next URL after ${options.uri} is ${nextUrl}`)
           let job2 = queue.create('download', {
-              title: 'downloading url ' + nextUrl
+              title: 'downloading url ' + decodeURIComponent(nextUrl)
             , original_serials: job.data.original_serials.slice()
             , serials: job.data.serials.slice()
             , url: nextUrl.replace(job.data.serials[0].split("=")[0], '${serial-number}')
@@ -156,7 +156,7 @@ queue.process('download', (job, done) => {
       let serials = job.data.serials.slice(1);
       if(serials.length > 0){
         let job2 = queue.create('download', {
-            title: 'downloading url ' + job.data.original_url.replace('${serial-number}',serials[0].split("=")[0])
+            title: 'downloading url ' + decodeURIComponent(job.data.original_url.replace('${serial-number}',serials[0].split("=")[0]))
           , original_serials: job.data.original_serials.slice()
           , serials: serials
           , url: job.data.original_url
