@@ -85,7 +85,7 @@ queue.process('download', (job, done) => {
           }
         });
 
-        if(response.body.next){
+        if(response.body.next && startAndEndAreDifferent(response.body.next)){
           // if there is a next field then create a new download job modeled after this one
           let nextUrl = OPENSENSORS_API_BASE_URL + response.body.next;
           console.log(`Next URL after ${options.uri} is ${nextUrl}`)
@@ -209,6 +209,29 @@ queue.process('download', (job, done) => {
     };
 });
 
+function startAndEndAreDifferent(url){
+  // first of all url decode the url
+  url = decodeURIComponent(url);
+
+  // url should have a start-date querystring parameter, and end-date querystring parameter
+  // extract them
+  let start = url.match(/start-date=([0-9T\-Z:\.\+]+)&?/)[1];
+  let end = url.match(/end-date=([0-9T\-Z:\.\+]+)&?/)[1];
+
+  try{
+    if(moment(start).isSame(moment(end))){
+      console.log(`FYI, ${start} and ${end} are in fact not different dates`);
+      return false;
+    }
+    else{
+      return true;
+    }
+  }
+  catch(e){
+    console.log("This should never happen", e);
+    return start != end;
+  }
+}
 
 process.once( 'uncaughtException', function(err){
   console.error( 'Something bad happened: ', err );
