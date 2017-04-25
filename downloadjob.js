@@ -4,6 +4,7 @@ var rp = require('request-promise');
 var config = require('../config.json');
 var fs = require('fs');
 var path = require('path');
+var moment = require('moment');
 
 var OPENSENSORS_API_BASE_URL = "https://api.opensensors.io"
 
