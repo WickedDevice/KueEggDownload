@@ -48,7 +48,15 @@ queue.process('download', (job, done) => {
         done();
       }
       else if(response.statusCode !== 200){
-        done(new Error(`OpenSensors returned status code ${response.statusCode}, with body ${JSON.stringify(response.body)}`));
+        if(response.statusCode === 400){
+          console.log("Backing off for 1 minute because got 400 status code");
+          setTimeout(() => {
+            done(new Error(`OpenSensors returned status code ${response.statusCode}, with body ${JSON.stringify(response.body)}`));
+          }, 60000);
+        }
+        else{
+          done(new Error(`OpenSensors returned status code ${response.statusCode}, with body ${JSON.stringify(response.body)}`));
+        }
       }
       else if(!response.body.messages){
         done(new Error("OpenSensors returned a body with no messages"));
@@ -86,15 +94,24 @@ queue.process('download', (job, done) => {
           }
         });
 
-        if(response.body.next && startAndEndAreDifferent(response.body.next)){
+        let nextUrl = "";
+        let theNextUrl = "";
+        if(response.body.next){
+          nextUrl = OPENSENSORS_API_BASE_URL + response.body.next;
+          theNextUrl = nextUrl.replace(job.data.serials[0].split("=")[0], '${serial-number}');
+        }
+        if(job.data.url === theNextUrl){
+          console.log("theNextUrl would be the same as the current Url - ignoring it.", theNextUrl);
+        }
+
+        if(response.body.next && startAndEndAreDifferent(response.body.next) && (job.data.url !== theNextUrl)){
           // if there is a next field then create a new download job modeled after this one
-          let nextUrl = OPENSENSORS_API_BASE_URL + response.body.next;
           // console.log(`Next URL after ${options.uri} is ${nextUrl}`)
           let job2 = queue.create('download', {
               title: 'downloading url ' + decodeURIComponent(nextUrl)
             , original_serials: job.data.original_serials.slice()
             , serials: job.data.serials.slice()
-            , url: nextUrl.replace(job.data.serials[0].split("=")[0], '${serial-number}')
+            , url: theNextUrl
             , original_url: job.data.original_url
             , save_path: job.data.save_path
             , user_id: job.data.user_id
